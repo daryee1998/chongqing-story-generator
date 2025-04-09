@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>山城 - 手札</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'FuLuLuxi';
+            src: url('assets/fonts/fulu-luxi-2.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'A131';
+            src: url('assets/fonts/A131-姥姥说媒小艾繁体.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --text-color: #e0c0c0;
+            --red-glow: rgba(255, 0, 0, 0.4);
+            --red-border: rgba(180, 0, 0, 0.7);
+            --dark-red-bg: rgba(60, 10, 10, 0.8);
+            /* Light theme colors */
+            --light-bg: rgba(245, 240, 220, 0.85); /* Creamy */
+            --light-text: #443;
+            --light-border: rgba(180, 150, 90, 0.7);
+            --light-glow: rgba(255, 200, 100, 0.4);
+            --light-accent-bg: rgba(210, 180, 120, 0.8);
+
+            --notebook-width: 90vw;
+            --notebook-height: 85vh;
+            --chinese-font: 'FuLuLuxi', serif;
+            --english-font: 'A131', serif;
+        }
+
+        .video-background {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            object-fit: cover;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: url('https://pbs.twimg.com/media/GAwM8BvbwAAWm1r.jpg:large');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-color: #333;
+            color: var(--text-color);
+            font-family: var(--chinese-font);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: background-color 0.5s ease-in-out;
+        }
+
+        .notebook {
+            width: var(--notebook-width);
+            max-width: 800px;
+            height: var(--notebook-height);
+            max-height: 800px;
+            background-color: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.4);
+            position: relative;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .notebook-inner {
+             position: relative;
+             width: 100%;
+             height: 100%;
+            transition: none;
+        }
+
+        .notebook.flipped .notebook-inner {
+            transform: none;
+        }
+
+        .notebook-page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            transition: none;
+            pointer-events: auto;
+        }
+
+        .notebook-front {
+            background-color: rgba(20, 20, 20, 0.6);
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notebook.flipped .notebook-front {
+            display: none;
+        }
+
+        .notebook-back {
+            background-color: rgba(30, 30, 30, 0.7);
+            z-index: 2;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            font-size: 1.2em;
+            color: #aaa;
+            padding-top: 40px;
+        }
+
+        .notebook.flipped .notebook-back {
+            display: flex;
+        }
+
+        .next-page-arrow {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 15px 0 15px 25px;
+            border-color: transparent transparent transparent rgba(240, 208, 208, 0.3);
+            background: none;
+            border-radius: 0;
+            cursor: pointer;
+            padding: 0;
+            z-index: 5;
+            transition: transform 0.2s, border-color 0.3s;
+            pointer-events: none;
+        }
+
+        .next-page-arrow.enabled {
+            opacity: 1;
+            border-color: transparent transparent transparent rgba(240, 208, 208, 0.5);
+            pointer-events: auto;
+        }
+
+        .next-page-arrow:hover {
+            transform: translateY(-50%) scale(1.1);
+            border-color: transparent transparent transparent rgba(240, 208, 208, 0.7);
+        }
+
+        .controls-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: stretch;
+            border-radius: 4px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 18px;
+            background: var(--dark-red-bg);
+            border: 1px solid var(--red-border);
+            color: var(--text-color);
+            border-radius: 3px;
+            font-size: 1.1em;
+            font-family: var(--english-font);
+            transition: border-color 0.3s, box-shadow 0.3s;
+            box-shadow: 0 0 8px var(--red-glow);
+            outline: none;
+            flex-grow: 1;
+        }
+        select {
+             flex-grow: 0;
+             min-width: 180px;
+             appearance: none;
+             background: var(--dark-red-bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23f0d0d0" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>') no-repeat right 12px center;
+             background-size: 14px;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            border-color: rgba(255, 0, 0, 0.8);
+            box-shadow: 0 0 15px rgba(255, 50, 50, 0.8);
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(240, 208, 208, 0.5);
+            opacity: 0.8;
+            font-family: var(--english-font);
+        }
+
+        select option[disabled] {
+            color: rgba(240, 208, 208, 0.5);
+            font-family: var(--english-font);
+        }
+
+        select option {
+             background: #300505;
+             color: var(--text-color);
+             font-family: var(--english-font);
+        }
+
+        .revealed-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 25px;
+            padding: 0;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            height: auto;
+            overflow: visible;
+        }
+
+        .images-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 15px;
+            background: transparent;
+        }
+
+        .movie-poster, .building-img {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            background-color: transparent;
+        }
+
+        /* Remove media queries for horizontal layout */
+        @media (min-width: 768px) {
+            .movie-poster, .building-img {
+                max-height: 500px;
+            }
+        }
+
+        /* Remove special handling for vertical layout since all layouts are now vertical */
+        .images-container.vertical {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .images-container.vertical .movie-poster,
+        .images-container.vertical .building-img {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            margin-bottom: 0;
+        }
+
+        .quote {
+            font-style: italic;
+            color: var(--text-color);
+            font-size: 2.2em;
+            line-height: 1.6;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            margin: 0 0 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            text-align: center;
+            position: relative;
+            font-family: var(--chinese-font);
+            letter-spacing: 0.5px;
+            order: -1;
+        }
+
+        .quote .english {
+            font-family: var(--english-font) !important;
+            font-size: 0.8em;
+            margin-top: 15px;
+            display: block;
+        }
+
+        .quote::before {
+            content: '"';
+            font-size: 2.4em;
+            position: absolute;
+            left: 10px;
+            top: 0;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .quote::after {
+            content: '"';
+            font-size: 2.4em;
+            position: absolute;
+            right: 10px;
+            bottom: 0;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #generateStoryBtn {
+            background: var(--dark-red-bg);
+            border: 1px solid var(--red-border);
+            color: var(--text-color);
+            box-shadow: 0 0 8px var(--red-glow);
+            font-size: 1.1em;
+            font-family: var(--english-font);
+            cursor: pointer;
+            border-radius: 3px;
+            padding: 10px 20px;
+            margin-bottom: 25px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        #generateStoryBtn:hover {
+             background: rgba(80, 20, 20, 0.9);
+             box-shadow: 0 0 12px rgba(255, 50, 50, 0.7);
+        }
+        #generateStoryBtn:disabled {
+             opacity: 0.5;
+             cursor: not-allowed;
+        }
+
+        #story-output {
+            width: 100%;
+            height: auto;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 15px;
+            text-align: left;
+            font-size: 1em;
+            line-height: 1.8;
+            color: var(--text-color);
+            font-family: var(--chinese-font);
+            letter-spacing: 0.3px;
+        }
+
+        #story-output p:first-child {
+            text-align: center;
+            color: rgba(220, 150, 150, 0.95);
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            font-family: var(--chinese-font);
+        }
+
+        #story-output p:not(:first-child):not(.english) {
+            font-family: var(--chinese-font);
+            margin-bottom: 1.2em;
+            font-weight: 300;
+        }
+
+        .story-genre {
+            margin-bottom: 15px;
+            font-size: 0.95em;
+            font-style: italic;
+            height: 1.2em;
+            font-family: var(--chinese-font);
+            color: rgba(220, 150, 150, 0.9);
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1em;
+            color: #aaa;
+            font-style: italic;
+            font-family: var(--english-font);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .loading-percentage {
+            font-size: 1.5em;
+            margin-top: 10px;
+            color: rgba(220, 150, 150, 0.8);
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background-color: rgba(100, 100, 100, 0.3);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background-color: rgba(220, 150, 150, 0.8);
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+            border-radius: 2px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .loading-text {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Back Arrow Button */
+        .back-page-arrow {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 15px 25px 15px 0;
+            border-color: transparent rgba(240, 208, 208, 0.3) transparent transparent;
+            background: none;
+            border-radius: 0;
+            cursor: pointer;
+            padding: 0;
+            z-index: 5;
+            transition: transform 0.2s, border-color 0.3s;
+        }
+        
+        .back-page-arrow:hover {
+            transform: translateY(-50%) scale(1.1);
+            border-color: transparent rgba(240, 208, 208, 0.7) transparent transparent;
+        }
+
+        /* Add page flip shadow effect */
+        .notebook::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(0,0,0,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .notebook.flipped::before {
+            opacity: 1;
+        }
+
+        /* --- Style-based themes --- */
+        .style-light {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        .style-dark {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+        }
+
+        @media (min-width: 1024px) {
+            :root {
+                --notebook-width: 800px;
+                --notebook-height: 800px;
+            }
+
+            body {
+                padding: 40px;
+            }
+
+            .notebook-page {
+                padding: 30px;
+            }
+
+            input[type="text"],
+            select,
+            #generateStoryBtn {
+                font-size: 1.2em;
+                padding: 15px 20px;
+            }
+
+            .quote {
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .notebook-page {
+                padding: 15px;
+            }
+
+            input[type="text"],
+            select,
+            #generateStoryBtn {
+                font-size: 1em;
+                padding: 10px 15px;
+            }
+
+            .quote {
+                font-size: 0.9em;
+            }
+        }
+
+        /* Global font settings - default to Chinese font */
+        * {
+            font-family: var(--chinese-font);
+        }
+
+        /* English text elements - override with A131 font */
+        .english,
+        [lang="en"],
+        [class*="english"],
+        [class*="English"],
+        [id*="english"],
+        [id*="English"],
+        .loading,
+        .loading-text,
+        .loading-percentage,
+        #generateStoryBtn,
+        select option,
+        .story-genre,
+        .next-page-arrow,
+        .back-page-arrow,
+        #story-output p.english,
+        #story-output .english strong,
+        #story-output .english,
+        .quote p.english,
+        .quote .english strong,
+        .quote .english {
+            font-family: var(--english-font) !important;
+        }
+
+        /* Specific styling for different English text elements */
+        #story-output p.english,
+        #story-output .english strong {
+            font-size: 0.9em;
+            margin-top: 10px;
+            color: rgba(220, 150, 150, 0.8);
+            font-style: italic;
+        }
+
+        .quote p.english,
+        .quote .english strong,
+        .quote .english {
+            font-size: 0.8em;
+            margin-top: 15px;
+            display: block;
+        }
+
+        .loading {
+            font-size: 1.1em;
+            color: #aaa;
+            font-style: italic;
+        }
+
+        .loading-percentage {
+            font-size: 1.5em;
+            color: rgba(220, 150, 150, 0.8);
+            font-weight: bold;
+        }
+
+        #generateStoryBtn {
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+
+        .story-genre {
+            font-size: 0.95em;
+            font-style: italic;
+            color: rgba(220, 150, 150, 0.9);
+        }
+
+        /* Second page story content - use default Chinese font for Chinese text */
+        #story-output p:not(.english) {
+            font-family: 'Noto Serif SC', serif !important;
+        }
+
+        /* Remove the global style for any text that contains English characters */
+        /* This was causing conflicts */
+        /* *:not([lang="zh-CN"]):not([lang="zh"]) {
+            font-family: var(--english-font) !important;
+        } */
+
+        /* Remove the ensure all Chinese text uses FuLuLuxi section */
+        /* This was causing conflicts */
+        /* body, 
+        p, 
+        h1, h2, h3, h4, h5, h6, 
+        span:not(.english), 
+        div:not(.english), 
+        input, 
+        select, 
+        button:not(#generateStoryBtn), 
+        .quote, 
+        #story-output, 
+        .story-genre,
+        .notebook-back,
+        .notebook-front,
+        .controls-area,
+        .input-group,
+        .revealed-content,
+        .images-container,
+        .movie-poster,
+        .building-img,
+        .next-page-arrow,
+        .back-page-arrow {
+            font-family: var(--chinese-font) !important;
+        } */
+
+    </style>
+</head>
+
+<body>
+    <video autoplay muted loop class="video-background">
+        <source src="your-video.mp4" type="video/mp4">
+        <!-- 如果视频无法播放，显示静态图片作为后备 -->
+        <img src="https://i.guancha.cn/bbs/2021/01/25/20210125145949466.jpeg" alt="Background Image">
+    </video>
+    <div class="notebook" id="notebook">
+        <div class="notebook-inner">
+            <div class="notebook-page notebook-front">
+
+                <div class="controls-area">
+                <div class="input-group">
+                         <input type="text" id="name" placeholder="your name">
+                    <select id="location">
+                             <option value="" disabled selected>select a place</option>
+                        <option value="长江索道">长江索道</option>
+                        <option value="来福士">来福士</option>
+                        <option value="防空洞火锅">防空洞火锅</option>
+                        <option value="交通茶馆">交通茶馆</option>
+                        <option value="李子坝">李子坝</option>
+                        <option value="皇冠大扶梯">皇冠大扶梯</option>
+                        <option value="洪崖洞">洪崖洞</option>
+                        <option value="磁器口">磁器口</option>
+                    </select>
+                    </div>
+                    <!-- Removed Reveal Button -->
+                    <!-- <button id="revealBtn" onclick="handleRevealClick()" title="揭示内容">🚇</button> -->
+                </div>
+
+                <div class="revealed-content" id="content">
+                    <p id="quote" class="quote"></p>
+                    <div class="images-container">
+                    <img id="poster" class="movie-poster" src="" alt="Movie Poster">
+                         <img id="building" class="building-img" src="" alt="Building Image">
+                    </div>
+                </div>
+
+                 <button class="next-page-arrow" id="nextPageArrow" onclick="slidePage()"></button>
+
+            </div>
+
+            <div class="notebook-page notebook-back" id="notebookBack">
+                 <!-- Back Arrow -->
+                 <button class="back-page-arrow" onclick="slideBack()" title="返回上一页"></button>
+
+                 <!-- Genre Display -->
+                 <div class="story-genre" id="storyGenre"></div>
+                 <!-- Generate Button -->
+                 <button id="generateStoryBtn" onclick="generateStory()">generate a film story..</button>
+                 <!-- Story Output -->
+                 <div id="story-output"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const locations = [
+            { name: '千厮门大桥', image: 'assets/images/千厮门大桥.png' },
+            { name: '李子坝', image: 'assets/images/李子坝.jpg' },
+            { name: '白象居', image: 'assets/images/白象居.png' },
+            { name: '长江索道', image: 'assets/images/长江索道1.png' },
+            { name: '皇冠大扶梯', image: 'assets/images/皇冠大扶梯1.png' },
+            { name: '朝天门码头', image: 'assets/images/朝天门码头1.png' },
+            { name: '弹子石码头', image: 'assets/images/弹子石码头.jpg' },
+            { name: '来福士', image: 'assets/images/来福士.jpg' },
+            { name: '南滨路', image: 'assets/images/南滨路2.jpg' },
+            { name: '老居民楼', image: 'assets/images/老居民楼.png' }
+        ];
+
+        const movies = [
+            { name: '疯狂的石头', image: 'assets/images/疯狂的石头1.png' },
+            { name: '少年的你', image: ['assets/images/少年的你1.jpg', 'assets/images/少年的你2.jpg'] },
+            { name: '日照重庆', image: 'assets/images/日照重庆1.jpg' },
+            { name: '刺杀小说家', image: 'assets/images/刺杀小说家.jpg' },
+            { name: '铤而走险', image: 'assets/images/铤而走险.jpg' },
+            { name: '好奇害死猫', image: 'assets/images/好奇害死猫.jpg' },
+            { name: '受益人', image: 'assets/images/受益人.jpg' },
+            { name: '秘岸', image: 'assets/images/秘岸.jpg' },
+            { name: '坚如磐石', image: 'assets/images/坚如磐石.jpg' }
+        ];
+
+        // 台词库
+        const quotes = {
+            '千厮门大桥': [
+                "你是一只能过河的卒，只能进不能退。\nYou are a pawn that can cross the river, you can only move forward, not backward.",
+                "一条狗，吃过一口肉，就再也不想吃骨头。\nOnce a dog has tasted meat, it no longer wants bones."
+            ],
+            '李子坝': [
+                "这城市像个迷宫，走错一步就出不去了。\nThis city is like a maze, one wrong step and you can't get out.",
+                "在黑暗里找路的人，不是被影子吞没，就是把自己变成灯。\nThose who search for a path in darkness are either swallowed by shadows or become a light themselves."
+            ],
+            '白象居': [
+                "如果在现实世界失去你，那就在平行世界重写故事，让我们再相遇。\nIf I lose you in this world, I'll rewrite our story in a parallel universe so we can meet again.",
+                "我相信，小说里的世界和人，都存在。\nI believe that the worlds and people in novels truly exist."
+            ],
+            '长江索道': [
+                "城市是母体，而我们生活在她的子宫里\nThe city is the mother, and we live in her womb",
+                "你当这是公共厕所迈，想来就来，想走就走\nDo you think this is a public toilet, coming and going as you please?"
+            ],
+            '皇冠大扶梯': [
+                "我们生活在阴沟里，但依然有人仰望星空。\nWe live in the gutter, but some still look up at the stars.",
+                "从来没有一节课，教过我们如何变成大人。\nThere was never a class that taught us how to become adults.",
+                "路上总会有阴影，抬头就会看到星光。\nThere will always be shadows on the road, but look up and you'll see starlight.",
+                "生活，就像夏天的柑橘树，挂着青皮的果，苦是一定的，甜也有。\nLife is like a summer citrus tree, bearing green-skinned fruit - bitter for sure, but sweet too.",
+                "你保护世界，我保护你。\nYou protect the world, I'll protect you."
+            ],
+            '朝天门码头': [
+                "船票过期了，可码头还在等一个没靠岸的人\nThe ticket has expired, but the pier still waits for someone who hasn't docked"
+            ],
+            '弹子石码头': [
+                "大人有些事情就不能跟小孩讲。\nThere are some things adults can't tell children.",
+                "现在这些人最严重的问题，不是生理有病，而是心理有病，看上去都不怎么开心的。\nThe most serious problem with people now is not physical illness, but mental illness - they don't seem very happy.",
+                "疤也是肉长的，已经成为你身体的一部分了。\nScars are made of flesh too, they've become part of your body.",
+                "每个人都需要心理的倾诉。\nEveryone needs psychological counseling."
+            ],
+            '来福士': [
+                "穷人的谎话是石头，咽下去沉胃，吐出来砸脚。\nA poor person's lies are like stones - swallowed they sink in the stomach, spit out they hit the feet."
+            ],
+            '南滨路': [
+                "我们生活在阴沟里，但依然有人仰望星空。\nWe live in the gutter, but some still look up at the stars.",
+                "从来没有一节课，教过我们如何变成大人。\nThere was never a class that taught us how to become adults.",
+                "路上总会有阴影，抬头就会看到星光。\nThere will always be shadows on the road, but look up and you'll see starlight.",
+                "生活，就像夏天的柑橘树，挂着青皮的果，苦是一定的，甜也有。\nLife is like a summer citrus tree, bearing green-skinned fruit - bitter for sure, but sweet too.",
+                "你保护世界，我保护你。\nYou protect the world, I'll protect you."
+            ],
+            '老居民楼': [
+                "猫虽有九条命, 最终却死于好奇心\nThough a cat has nine lives, it ultimately dies of curiosity",
+                "窥见秘密的人，最后都成了秘密的猎物。\nThose who glimpse secrets eventually become prey to the secrets."
+            ]
+        };
+
+        const movieData = {
+            "长江索道": {
+                 poster: "https://picsum.photos/seed/p_cablecar/100/150",
+                 building: "https://picsum.photos/seed/b_cablecar/180/120",
+                 quote: "江风带着索道的歌谣，飘过时间的痕迹。"
+             },
+             "来福士": {
+                 poster: "https://picsum.photos/seed/p_raffles/100/150",
+                 building: "https://picsum.photos/seed/b_raffles/180/120",
+                 quote: "扬帆的建筑，刺破云层，是山城的未来想象。"
+             },
+            "防空洞火锅": {
+                 poster: "https://picsum.photos/seed/p_hotpot/100/150",
+                 building: "https://picsum.photos/seed/b_hotpot/180/120",
+                 quote: "洞里的热辣，是这座城市的坚韧与温度。"
+             },
+            "交通茶馆": {
+                  poster: "https://picsum.photos/seed/p_tea/100/150",
+                  building: "https://picsum.photos/seed/b_tea/180/120",
+                  quote: "一杯盖碗茶，半日闲时光，沉淀着老重庆的慢。"
+             },
+            "李子坝": {
+                 poster: "https://picsum.photos/seed/p_liziba/100/150",
+                 building: "https://picsum.photos/seed/b_liziba/180/120",
+                 quote: "穿楼而过的，不只是列车，还有生活的奇幻感。"
+             },
+            "皇冠大扶梯": {
+                 poster: "https://picsum.photos/seed/p_escalator/100/150",
+                 building: "https://picsum.photos/seed/b_escalator/180/120",
+                 quote: "亚洲第二长，连接的是山与城，上与下。"
+             },
+            "洪崖洞": {
+                 poster: "https://picsum.photos/seed/p_hongya/100/150",
+                 building: "https://picsum.photos/seed/b_hongya/180/120",
+                 quote: "现实版的千与千寻，灯火辉煌，是不夜的童话。"
+             },
+            "磁器口": {
+                 poster: "https://picsum.photos/seed/p_ciqi/100/150",
+                 building: "https://picsum.photos/seed/b_ciqi/180/120",
+                 quote: "青石板路，麻花飘香，千年古镇的故事还在讲。"
+             },
+            "DEFAULT": {
+                 poster: "https://picsum.photos/seed/p_default/100/150",
+                 building: "https://picsum.photos/seed/b_default/180/120",
+                 quote: "山城的每一个角落，都可能藏着一个故事..."
+            }
+         };
+
+        const notebook = document.getElementById('notebook');
+        const contentDiv = document.getElementById('content');
+        const posterImg = document.getElementById('poster');
+        const buildingImg = document.getElementById('building');
+        const quoteP = document.getElementById('quote');
+        const revealBtn = document.getElementById('revealBtn');
+        const locationSelect = document.getElementById('location');
+        const arrowBtn = document.getElementById('nextPageArrow');
+        const nameInput = document.getElementById('name');
+        const generateBtn = document.getElementById('generateStoryBtn');
+        const storyOutput = document.getElementById('story-output');
+        const notebookBack = document.getElementById('notebookBack'); // Get back page element
+        const storyGenreDiv = document.getElementById('storyGenre'); // Get genre div
+
+        let isContentShown = false;
+        let currentName = "";
+        let currentLocation = "";
+
+        // --- Event Listener for Location Change --- 
+        locationSelect.addEventListener('change', handleLocationChange);
+
+        // Function triggered when location dropdown changes
+        function handleLocationChange() {
+            currentLocation = locationSelect.value;
+            currentName = nameInput.value.trim() || "your name"; // Update name when location changes too
+
+            if (currentLocation) { // If a valid location is selected
+                // Find the location data from our locations array
+                const locationData = locations.find(loc => loc.name === currentLocation);
+                
+                // Define specific location to movie mappings
+                const locationMovieMap = {
+                    '千厮门大桥': '坚如磐石',
+                    '弹子石码头': '秘岸',
+                    '皇冠大扶梯': '少年的你',
+                    '南滨路': '少年的你',
+                    '李子坝': '铤而走险',
+                    '老居民楼': '好奇害死猫',
+                    '长江索道': '疯狂的石头',
+                    '来福士': '受益人',
+                    '白象居': '刺杀小说家',
+                    '朝天门码头': '日照重庆'
+                };
+                
+                // Find the corresponding movie based on the mapping
+                const movieName = locationMovieMap[currentLocation];
+                const movieData = movieName ? movies.find(movie => movie.name === movieName) : null;
+                
+                // Hide content briefly for update
+                contentDiv.style.display = 'none';
+
+                // Update content with actual images
+                if (movieData) {
+                    // If we have a movie related to this location
+                    if (Array.isArray(movieData.image)) {
+                        // Special handling for "少年的你" movie
+                        if (movieName === '少年的你') {
+                            if (currentLocation === '皇冠大扶梯') {
+                                // Use first image for 皇冠大扶梯
+                                posterImg.src = movieData.image[0];
+                            } else if (currentLocation === '南滨路') {
+                                // Use second image for 南滨路
+                                posterImg.src = movieData.image[1];
+                            }
+                        } else {
+                            // For other movies with multiple images, use the first one
+                            posterImg.src = movieData.image[0];
+                        }
+                    } else {
+                        posterImg.src = movieData.image;
+                    }
+                    posterImg.alt = movieData.name + " 海报";
+                } else {
+                    // If no movie is found, use a default image
+                    posterImg.src = "assets/images/重庆夜景.jpg";
+                    posterImg.alt = "重庆夜景";
+                }
+                
+                // Set the building image from our locations array
+                buildingImg.src = locationData ? locationData.image : "assets/images/重庆夜景.jpg";
+                buildingImg.alt = currentLocation + " 实景";
+                
+                // Set the quote from our quotes array
+                const locationQuotes = quotes[currentLocation];
+                if (locationQuotes && locationQuotes.length > 0) {
+                    const randomQuote = locationQuotes[Math.floor(Math.random() * locationQuotes.length)];
+                    const [chinese, english] = randomQuote.split('\n');
+                    quoteP.innerHTML = `${chinese}<span class="english">${english}</span>`;
+                } else {
+                    quoteP.textContent = "重庆的每一个角落，都可能藏着一个故事...";
+                }
+
+                // Show content after a small delay
+            setTimeout(() => {
+                    contentDiv.style.display = 'flex';
+                isContentShown = true;
+                    arrowBtn.classList.add('enabled');
+                    arrowBtn.disabled = false;
+                }, 50); 
+
+                // Reset back page whenever a new location is selected
+                resetBackPage();
+
+            } else { // If placeholder "select a place" is re-selected
+                contentDiv.style.display = 'none';
+                isContentShown = false;
+                arrowBtn.classList.remove('enabled');
+                arrowBtn.disabled = true;
+                resetBackPage(); // Also reset back page here
+            }
+        }
+
+        function slidePage() {
+                    notebook.classList.add('flipped');
+            arrowBtn.classList.remove('enabled');
+            arrowBtn.disabled = true;
+        }
+
+        function slideBack() {
+            notebook.classList.remove('flipped');
+
+            // --- Reset Front Page State --- 
+            contentDiv.style.display = 'none';
+            isContentShown = false;
+            arrowBtn.classList.remove('enabled');
+            arrowBtn.disabled = true;
+            
+            // --- Reset Back Page State --- 
+            resetBackPage();
+        }
+
+        function resetBackPage() {
+            storyGenreDiv.textContent = ''; // Clear genre text
+            storyOutput.innerHTML = ''; // Clear story
+            generateBtn.style.display = 'inline-block'; // Show generate button
+            generateBtn.disabled = false;
+            // Remove specific style classes
+            notebookBack.classList.remove('style-light', 'style-dark');
+        }
+
+        contentDiv.style.display = 'none';
+        arrowBtn.classList.remove('enabled');
+        arrowBtn.disabled = true; // Ensure arrow starts disabled
+        locationSelect.value = "";
+
+        // Updated API call function to request both Chinese and English versions
+        async function callDeepSeekAPI(name, location, genre) {
+             console.log(`Calling DeepSeek for: ${name} at ${location} with pre-selected genre: ${genre}`);
+            const apiKey = 'sk-0c23a925f8ff472780c31e41fe82d422';
+            const apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [{
+                            role: "user",
+                            content: `请用大约100字创作一个**${genre}**风格的故事情节片段，要求：\n1. 主角叫${name}，故事发生在重庆的${location}。\n2. 故事内容有以下要求：\n   - 内容需要现实主义，情节现实，不要有荒诞的东西，禁止出现红裙子意象。\n   - 文字风格偏简单文艺（与指定的${genre}风格融合）。\n   - 对白可以掺杂重庆方言。\n   - 只能包含一个地点和两至三个人物。\n   - 故事逻辑前后连贯，不能矛盾。\n3. 文字更加自然，更像人类书写的内容：\n   - 减少过于完美的句式结构，添加适当的不规则表达。\n   - 使用更加个性化的语言。\n   - 偶尔使用口语化表达。\n4. 格式要求：\n   - 包含标题（用「」括起）。\n   - **不要**在开头包含"风格：..."或任何风格标签。\n5. 请同时提供英文版本，格式如下：\n\n中文故事：\n[你的中文故事]\n\n[对应的英文版本，标题同样用「」括起，不要包含任何翻译相关的词语或标记]`
+                        }],
+                        temperature: 0.75,
+                        max_tokens: 500
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("API Error Response:", errorBody);
+                    let errorMsg = `API 请求失败: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorJson = JSON.parse(errorBody);
+                        if (errorJson.error && errorJson.error.message) {
+                            errorMsg += ` - ${errorJson.error.message}`;
+                        }
+                    } catch(e) { /* Ignore parsing error */ }
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+
+                if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                     // API now returns both Chinese and English versions
+                     let storyText = data.choices[0].message.content.trim();
+                     
+                     // Split the content into Chinese and English parts
+                     const chineseMatch = storyText.match(/中文故事：\n([\s\S]*?)(?=\n\n|$)/);
+                     const englishMatch = storyText.match(/\n\n([\s\S]*?)$/);
+                     
+                     let chineseStory = chineseMatch ? chineseMatch[1].trim() : storyText;
+                     let englishStory = englishMatch ? englishMatch[1].trim() : '';
+                     
+                     // Remove any occurrence of "英文翻译：" text and clean up the English story
+                     englishStory = englishStory
+                         .replace(/英文翻译：\s*/g, '')
+                         .replace(/^英文翻译\s*/g, '')
+                         .replace(/^\(英文翻译\)\s*/g, '')
+                         .replace(/^英文：\s*/g, '')
+                         .replace(/^英文版：\s*/g, '')
+                         .replace(/^English version：\s*/g, '')
+                         .replace(/^English：\s*/g, '')
+                         .replace(/^English translation：\s*/g, '')
+                         .replace(/英文翻译：/g, '')
+                         .replace(/英文翻译/g, '')
+                         .replace(/\(英文翻译\)/g, '')
+                         .replace(/英文：/g, '')
+                         .replace(/英文版：/g, '')
+                         .replace(/English version：/g, '')
+                         .replace(/English：/g, '')
+                         .replace(/English translation：/g, '')
+                         .replace(/英文版本：/g, '')
+                         .replace(/英文版本/g, '')
+                         .replace(/\(英文版本\)/g, '')
+                         .replace(/版本：/g, '')
+                         .replace(/version：/g, '')
+                         .replace(/翻译：/g, '')
+                         .replace(/translation：/g, '')
+                         .replace(/translation/g, '')
+                         .replace(/translated version：/g, '')
+                         .replace(/translated version/g, '')
+                         .replace(/translated：/g, '')
+                         .replace(/translated/g, '')
+                         .replace(/version/g, '')
+                         .replace(/英文/g, '')
+                         .replace(/English/g, '')
+                         .trim();
+                     
+                     // Check if the content already contains both Chinese and English
+                     // If the content contains "中文故事：" marker, it's already formatted
+                     const hasFormattedContent = storyText.includes("中文故事：");
+                     
+                     // If the content is already formatted, use it directly
+                     if (hasFormattedContent) {
+                         // --- Format Chinese Story --- 
+                         let processedChineseStory = '';
+                         const chineseParts = chineseStory.split(/(\n\s*\n)/);
+                         let isFirstParagraph = true;
+                         chineseParts.forEach(part => {
+                             const trimmedPart = part.trim();
+                             if (trimmedPart.length === 0) return;
+                             if (/^\n\s*\n$/.test(part)) return;
+
+                             const titleMatch = trimmedPart.match(/^「(.*?)」$/);
+                             if (titleMatch && isFirstParagraph) {
+                                 processedChineseStory += `<p><strong>「${titleMatch[1]}」</strong></p>`;
+                             } else {
+                                 processedChineseStory += `<p>${trimmedPart.replace(/\n/g, '<br>')}</p>`;
+                             }
+                             isFirstParagraph = false;
+                         });
+                         
+                         // --- Format English Story --- 
+                         let processedEnglishStory = '';
+                         if (englishStory) {
+                             const englishParts = englishStory.split(/(\n\s*\n)/);
+                             isFirstParagraph = true;
+                             englishParts.forEach(part => {
+                                 const trimmedPart = part.trim();
+                                 if (trimmedPart.length === 0) return;
+                                 if (/^\n\s*\n$/.test(part)) return;
+                                 
+                                 // Check for title in various formats
+                                 const titleMatch = trimmedPart.match(/^"(.*?)"$/) || 
+                                                   trimmedPart.match(/^「(.*?)」$/) || 
+                                                   trimmedPart.match(/^'(.*?)'$/);
+                                 
+                                 if (titleMatch && isFirstParagraph) {
+                                     processedEnglishStory += `<p class="english"><strong>「${titleMatch[1]}」</strong></p>`;
+                                 } else {
+                                     processedEnglishStory += `<p class="english">${trimmedPart.replace(/\n/g, '<br>')}</p>`;
+                                 }
+                                 isFirstParagraph = false;
+                             });
+                         }
+                         
+                         // Combine Chinese and English stories
+                         return processedChineseStory + processedEnglishStory;
+                     } else {
+                         // If the content is not formatted, process it as a single story
+                         let processedStory = '';
+                         const parts = storyText.split(/(\n\s*\n)/);
+                         let isFirstParagraph = true;
+                         
+                         parts.forEach(part => {
+                             const trimmedPart = part.trim();
+                             if (trimmedPart.length === 0) return;
+                             if (/^\n\s*\n$/.test(part)) return;
+                             
+                             const titleMatch = trimmedPart.match(/^「(.*?)」$/);
+                             if (titleMatch && isFirstParagraph) {
+                                 processedStory += `<p><strong>「${titleMatch[1]}」</strong></p>`;
+                             } else {
+                                 processedStory += `<p>${trimmedPart.replace(/\n/g, '<br>')}</p>`;
+                             }
+                             isFirstParagraph = false;
+                         });
+                         
+                         return processedStory;
+                     }
+                 } else {
+                     console.error("Invalid API response structure:", data);
+                     throw new Error('从API收到了无效的响应结构');
+                 }
+            } catch (error) {
+                console.error("Error calling DeepSeek API:", error);
+                throw error;
+            }
+         }
+
+         async function generateStory() {
+            const name = nameInput.value.trim();
+             const location = locationSelect.value;
+
+            if (!name || !location) {
+                alert("请输入名字和选择地点");
+                return;
+            }
+
+            // Show loading state with percentage animation
+            storyOutput.innerHTML = `
+                <div class="loading">
+                    <div class="loading-text">Generating story</div>
+                    <div class="loading-percentage">1%</div>
+                    <div class="loading-bar">
+                        <div class="loading-bar-fill"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Get the loading elements
+            const percentageElement = storyOutput.querySelector('.loading-percentage');
+            const barFillElement = storyOutput.querySelector('.loading-bar-fill');
+            
+            // Start the percentage animation
+            let percentage = 1;
+            const percentageInterval = setInterval(() => {
+                percentage += Math.floor(Math.random() * 3) + 1; // Random increment between 1-3
+                if (percentage > 99) percentage = 99; // Cap at 99% until complete
+                percentageElement.textContent = `${percentage}%`;
+                barFillElement.style.width = `${percentage}%`;
+            }, 100);
+            
+            storyGenreDiv.textContent = ''; // Clear previous genre text
+            generateBtn.disabled = true;
+            notebookBack.classList.remove('style-light', 'style-dark'); // Reset styles
+
+            try {
+                // Select a genre randomly from the list
+                const allGenres = ['喜剧', '治愈', '动作', '犯罪', '爱情', '童话', '青春', '悬疑', '恐怖', '惊悚'];
+                const genreTranslations = {
+                    '喜剧': 'comedy',
+                    '治愈': 'healing',
+                    '动作': 'action',
+                    '犯罪': 'crime',
+                    '爱情': 'romance',
+                    '童话': 'fairy tale',
+                    '青春': 'youth',
+                    '悬疑': 'mystery',
+                    '恐怖': 'horror',
+                    '惊悚': 'thriller'
+                };
+                const selectedGenre = allGenres[Math.floor(Math.random() * allGenres.length)];
+                const genreTranslation = genreTranslations[selectedGenre] || selectedGenre;
+                console.log("Client selected genre:", selectedGenre);
+
+                // Display the genre text in English format with Chinese genre and English translation
+                storyGenreDiv.textContent = `${name}'s story style: ${selectedGenre} (${genreTranslation})`;
+
+                // Call API with the selected genre
+                const story = await callDeepSeekAPI(name, location, selectedGenre);
+                
+                // Complete the loading animation
+                clearInterval(percentageInterval);
+                percentageElement.textContent = '100%';
+                barFillElement.style.width = '100%';
+                
+                // Short delay before showing the story
+                setTimeout(() => {
+                    storyOutput.innerHTML = story; // API now returns only the formatted story
+                    generateBtn.style.display = 'none'; // Hide button on success
+                }, 500);
+                
+             } catch (error) {
+                 console.error("Error generating story:", error);
+                 clearInterval(percentageInterval);
+                storyOutput.innerHTML = `<p class="error">生成故事时出错: ${error.message}</p>`;
+                generateBtn.style.display = 'inline-block';
+                generateBtn.disabled = false;
+            }
+        }
+
+        function updateLocationSelect() {
+            locationSelect.innerHTML = '<option value="" disabled selected>select a place</option>';
+            const locationNames = {
+                '千厮门大桥': 'Qiansimen Bridge',
+                '李子坝': 'Liziba',
+                '白象居': 'Baixiangju',
+                '长江索道': 'Yangtze River Cableway',
+                '皇冠大扶梯': 'Crown Escalator',
+                '朝天门码头': 'Chaotianmen Dock',
+                '弹子石码头': 'Danzi Stone Dock',
+                '来福士': 'Raffles City',
+                '南滨路': 'Nanbin Road',
+                '老居民楼': 'Old Residential Building'
+            };
+            
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location.name;
+                option.textContent = `${location.name} (${locationNames[location.name]})`;
+                locationSelect.appendChild(option);
+            });
+        }
+
+        function updateMoviePoster() {
+            const selectedLocation = locationSelect.value;
+            const moviePoster = document.getElementById('moviePoster');
+            const movieTitle = document.getElementById('movieTitle');
+            const movieQuote = document.getElementById('movieQuote');
+            
+            if (selectedLocation) {
+                const locationData = movieData[selectedLocation];
+                if (locationData) {
+                    movieTitle.textContent = locationData.title;
+                    moviePoster.src = locationData.poster;
+                    movieQuote.textContent = locationData.quote;
+                } else {
+                    // 如果没有电影数据，显示随机台词
+                    const locationQuotes = quotes[selectedLocation];
+                    if (locationQuotes) {
+                        const randomQuote = locationQuotes[Math.floor(Math.random() * locationQuotes.length)];
+                        movieQuote.textContent = randomQuote;
+                    }
+                    movieTitle.textContent = "重庆故事";
+                    moviePoster.src = "assets/images/重庆夜景.jpg";
+                }
+            } else {
+                movieTitle.textContent = "请选择地点";
+                moviePoster.src = "assets/images/重庆夜景.jpg";
+                movieQuote.textContent = "";
+            }
+        }
+
+        function updateBuildingImage() {
+            const selectedLocation = locationSelect.value;
+            const buildingImg = document.getElementById('buildingImg');
+            
+            if (selectedLocation) {
+                const location = locations.find(loc => loc.name === selectedLocation);
+                if (location) {
+                    buildingImg.src = location.image;
+                }
+            } else {
+                buildingImg.src = "assets/images/重庆夜景.jpg";
+            }
+        }
+
+        // 初始化页面
+        updateLocationSelect();
+        locationSelect.addEventListener('change', () => {
+            updateMoviePoster();
+            updateBuildingImage();
+        });
+
+    </script>
+
+</body>
+
+</html>    
